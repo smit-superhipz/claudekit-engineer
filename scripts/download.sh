@@ -29,7 +29,7 @@ NC='\033[0m'
 # Config
 #-------------------------------------------------------------------------------
 # Token: Use env var or hardcode (NEVER commit hardcoded token to public repo)
-GITHUB_TOKEN="${GITHUB_TOKEN:-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}"
+GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 REPO_OWNER="claudekit"
 API_BASE="https://api.github.com"
 
