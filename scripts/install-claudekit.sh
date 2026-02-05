@@ -33,7 +33,7 @@ NC='\033[0m'
 #-------------------------------------------------------------------------------
 # BASE_URL: Set this before serving, or pass via env var
 # Example: BASE_URL=http://192.168.1.100:8080 curl -fsSL .../install-claudekit.sh | bash
-BASE_URL="${BASE_URL:-http://192.168.68.63:4567}"
+BASE_URL="${BASE_URL:-http://192.168.68.66:4567}"
 
 TEMP_DIR=""
 MANIFEST_FILE=""
