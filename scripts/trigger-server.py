@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Simple HTTP trigger server for download.sh"""
+"""ClaudeKit server - serves static files and handles download triggers"""
 import subprocess
 import http.server
 import json
 import re
+import os
 from datetime import datetime
+from pathlib import Path
 
 PORT = 8080
 DOWNLOAD_SCRIPT = "/app/download.sh"
+STATIC_DIR = Path("/app")
 
 def strip_ansi(text):
     """Remove ANSI color codes from text"""
@@ -39,8 +42,12 @@ def parse_download_output(stdout):
 
     return files, errors
 
-class TriggerHandler(http.server.BaseHTTPRequestHandler):
+class ClaudeKitHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
+
     def do_GET(self):
+        # API endpoints
         if self.path == "/trigger-download":
             self.trigger_download()
         elif self.path == "/trigger-download?force=true":
@@ -48,7 +55,8 @@ class TriggerHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/health":
             self.send_json(200, {"status": "ok"})
         else:
-            self.send_json(404, {"error": "Not found"})
+            # Serve static files
+            super().do_GET()
 
     def trigger_download(self, force=False):
         try:
@@ -90,8 +98,11 @@ class TriggerHandler(http.server.BaseHTTPRequestHandler):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {args[0]}")
 
 if __name__ == "__main__":
-    print(f"Trigger server running on port {PORT}")
+    print(f"ClaudeKit server running on port {PORT}")
+    print(f"Static files: {STATIC_DIR}")
+    print(f"Endpoints:")
     print(f"  GET /trigger-download - Run download.sh")
     print(f"  GET /trigger-download?force=true - Force re-download")
     print(f"  GET /health - Health check")
-    http.server.HTTPServer(("", PORT), TriggerHandler).serve_forever()
+    print(f"  GET /* - Static files")
+    http.server.HTTPServer(("", PORT), ClaudeKitHandler).serve_forever()
