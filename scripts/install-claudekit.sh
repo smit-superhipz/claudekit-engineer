@@ -361,9 +361,6 @@ run_installer() {
     # Post-install steps
     fix_settings_paths "$target_claude"
     inject_language_setting "$target_claude"
-    copy_claude_md "$target_claude"
-    copy_shared_rules "$target_claude"
-    inject_shared_rules "$target_claude"
 
     # Summary
     echo ""
@@ -406,9 +403,6 @@ run_download_only() {
     find "$target_dir" -name "*.py" -exec chmod +x {} \; 2>/dev/null || true
 
     print_success "ClaudeKit downloaded to $(pwd)/.claude"
-
-    copy_claude_md "$target_dir"
-    copy_shared_rules "$target_dir"
 
     echo ""
     echo -e "${GREEN}Download complete!${NC}"
@@ -465,72 +459,6 @@ inject_language_setting() {
     mv "$temp_file" "$settings_file"
 
     print_success "Added language: vietnamese"
-}
-
-copy_claude_md() {
-    local target_dir="$1"
-    local target_file="$target_dir/CLAUDE.md"
-
-    if [ -f "$EXTRACTED_DIR/CLAUDE.md" ]; then
-        cp "$EXTRACTED_DIR/CLAUDE.md" "$target_file"
-        print_success "Copied CLAUDE.md"
-    elif [ -f "$EXTRACTED_DIR/scripts/CLAUDE.md" ]; then
-        cp "$EXTRACTED_DIR/scripts/CLAUDE.md" "$target_file"
-        print_success "Copied CLAUDE.md"
-    fi
-}
-
-copy_shared_rules() {
-    local target_dir="$1"
-    local target_file="$target_dir/_shared-rules.md"
-
-    if [ -f "$EXTRACTED_DIR/_shared-rules.md" ]; then
-        cp "$EXTRACTED_DIR/_shared-rules.md" "$target_file"
-        print_success "Copied _shared-rules.md"
-    elif [ -f "$EXTRACTED_DIR/scripts/_shared-rules.md" ]; then
-        cp "$EXTRACTED_DIR/scripts/_shared-rules.md" "$target_file"
-        print_success "Copied _shared-rules.md"
-    elif [ -f "$EXTRACTED_DIR/.claude/_shared-rules.md" ]; then
-        cp "$EXTRACTED_DIR/.claude/_shared-rules.md" "$target_file"
-        print_success "Copied _shared-rules.md"
-    fi
-}
-
-inject_shared_rules() {
-    local agents_dir="$1/agents"
-    local shared_rules_ref="**CRITICAL:** You MUST read and strictly follow ALL rules at \`~/.claude/_shared-rules.md\` before proceeding. NON-NEGOTIABLE."
-    local marker="<!-- SHARED_RULES_INJECTED -->"
-    local injected=0
-
-    if [ ! -d "$agents_dir" ]; then
-        return
-    fi
-
-    for file in "$agents_dir"/*.md; do
-        [ -f "$file" ] || continue
-        local filename=$(basename "$file")
-
-        if [ "$filename" = "_shared-rules.md" ]; then
-            continue
-        fi
-
-        if grep -q "$marker" "$file" 2>/dev/null; then
-            continue
-        fi
-
-        echo "" >> "$file"
-        echo "$marker" >> "$file"
-        echo "" >> "$file"
-        echo "---" >> "$file"
-        echo "" >> "$file"
-        echo "$shared_rules_ref" >> "$file"
-
-        ((injected++))
-    done
-
-    if [ $injected -gt 0 ]; then
-        print_success "Injected shared rules into $injected agent files"
-    fi
 }
 
 #-------------------------------------------------------------------------------
