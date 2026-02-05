@@ -360,6 +360,7 @@ run_installer() {
 
     # Post-install steps
     fix_settings_paths "$target_claude"
+    inject_language_setting "$target_claude"
     copy_claude_md "$target_claude"
     copy_shared_rules "$target_claude"
     inject_shared_rules "$target_claude"
@@ -442,43 +443,40 @@ fix_settings_paths() {
     fi
 }
 
+inject_language_setting() {
+    local claude_dir="$1"
+    local settings_file="$claude_dir/settings.json"
+
+    if [ ! -f "$settings_file" ]; then
+        return 0
+    fi
+
+    # Check if language already set
+    if grep -q '"language"' "$settings_file"; then
+        print_info "Language already set in settings.json"
+        return 0
+    fi
+
+    print_info "Adding language setting..."
+
+    # Insert "language": "vietnamese" after first {
+    local temp_file=$(mktemp)
+    awk 'NR==1 && /^\{$/ {print "{"; print "  \"language\": \"vietnamese\","; next} {print}' "$settings_file" > "$temp_file"
+    mv "$temp_file" "$settings_file"
+
+    print_success "Added language: vietnamese"
+}
+
 copy_claude_md() {
     local target_dir="$1"
     local target_file="$target_dir/CLAUDE.md"
-    local custom_rules_file=""
 
-    # Find custom rules file from scripts/CLAUDE.md
-    if [ -f "$EXTRACTED_DIR/scripts/CLAUDE.md" ]; then
-        custom_rules_file="$EXTRACTED_DIR/scripts/CLAUDE.md"
-    fi
-
-    # Copy base CLAUDE.md if exists (from .claude folder)
-    if [ -f "$EXTRACTED_DIR/.claude/CLAUDE.md" ]; then
-        cp "$EXTRACTED_DIR/.claude/CLAUDE.md" "$target_file"
-        print_success "Copied CLAUDE.md"
-    elif [ -f "$EXTRACTED_DIR/CLAUDE.md" ] && [ "$EXTRACTED_DIR/CLAUDE.md" != "$custom_rules_file" ]; then
+    if [ -f "$EXTRACTED_DIR/CLAUDE.md" ]; then
         cp "$EXTRACTED_DIR/CLAUDE.md" "$target_file"
         print_success "Copied CLAUDE.md"
-    fi
-
-    # Append custom rules if found
-    if [ -n "$custom_rules_file" ] && [ -f "$custom_rules_file" ]; then
-        # Create file if not exists
-        if [ ! -f "$target_file" ]; then
-            touch "$target_file"
-        fi
-
-        # Append custom rules with header
-        {
-            echo ""
-            echo "---"
-            echo ""
-            echo "## Custom Rules"
-            echo ""
-            cat "$custom_rules_file"
-        } >> "$target_file"
-
-        print_success "Injected custom rules from scripts/CLAUDE.md"
+    elif [ -f "$EXTRACTED_DIR/scripts/CLAUDE.md" ]; then
+        cp "$EXTRACTED_DIR/scripts/CLAUDE.md" "$target_file"
+        print_success "Copied CLAUDE.md"
     fi
 }
 
