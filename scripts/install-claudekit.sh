@@ -445,13 +445,40 @@ fix_settings_paths() {
 copy_claude_md() {
     local target_dir="$1"
     local target_file="$target_dir/CLAUDE.md"
+    local custom_rules_file=""
 
-    if [ -f "$EXTRACTED_DIR/CLAUDE.md" ]; then
+    # Find custom rules file from scripts/CLAUDE.md
+    if [ -f "$EXTRACTED_DIR/scripts/CLAUDE.md" ]; then
+        custom_rules_file="$EXTRACTED_DIR/scripts/CLAUDE.md"
+    fi
+
+    # Copy base CLAUDE.md if exists (from .claude folder)
+    if [ -f "$EXTRACTED_DIR/.claude/CLAUDE.md" ]; then
+        cp "$EXTRACTED_DIR/.claude/CLAUDE.md" "$target_file"
+        print_success "Copied CLAUDE.md"
+    elif [ -f "$EXTRACTED_DIR/CLAUDE.md" ] && [ "$EXTRACTED_DIR/CLAUDE.md" != "$custom_rules_file" ]; then
         cp "$EXTRACTED_DIR/CLAUDE.md" "$target_file"
         print_success "Copied CLAUDE.md"
-    elif [ -f "$EXTRACTED_DIR/scripts/CLAUDE.md" ]; then
-        cp "$EXTRACTED_DIR/scripts/CLAUDE.md" "$target_file"
-        print_success "Copied CLAUDE.md"
+    fi
+
+    # Append custom rules if found
+    if [ -n "$custom_rules_file" ] && [ -f "$custom_rules_file" ]; then
+        # Create file if not exists
+        if [ ! -f "$target_file" ]; then
+            touch "$target_file"
+        fi
+
+        # Append custom rules with header
+        {
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Custom Rules"
+            echo ""
+            cat "$custom_rules_file"
+        } >> "$target_file"
+
+        print_success "Injected custom rules from scripts/CLAUDE.md"
     fi
 }
 
